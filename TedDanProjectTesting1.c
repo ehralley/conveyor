@@ -5,7 +5,7 @@
 #include <stdint.h>
 #include <math.h>
 
-#define CLOCK_MULT 4
+#define CLOCK_MULT 4 // to account for increase in clock speed
 
 #define PARTS_TO_SORT 48
 #define FORWARD 0b00001000 //Commands for motor direction
@@ -364,7 +364,7 @@ void calibrateMaterials(){
 		PORTC = ADC_avg;
 		PORTA = ADC_avg>>8;
 		refl_theoretical[i] = ADC_avg;
-		pearDelay(10000); //delay to record value
+    	pearDelay(10000); //delay to record value
 	}
 }
 
