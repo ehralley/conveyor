@@ -8,25 +8,25 @@
 #define CLOCK_MULT 4 // to account for increase in clock speed
 
 #define PARTS_TO_SORT 48
+#define MATERIAL_COUNT 4
 #define FORWARD 0b00001000 //Commands for motor direction
 #define REVERSE 0b00000100
 #define BRAKE	0b00000000
-#define BRAKE_TIME 300 //ms
-#define IND_RANGE 1500
-#define REFL_RANGE 13000
+#define BRAKE_TIME_MS 300
+#define IND_RANGE_UM 1500
+#define REFL_RANGE_UM 13000
 
-#define STEP_SCALE_SPEED 100.0
-#define STEP_HOME_TIME 18
-#define MAX_STEP_TIME_EMPTY 14.0 //14
-#define MIN_STEP_TIME_EMPTY 4.5 //4.75
-#define MAX_STEP_TIME_FULL 14.0 //14 //new 14
-#define MIN_STEP_TIME_FULL 5.0//5.5 //new 5.0
+#define STEP_HOME_TIME_MS 18
+#define MAX_STEP_TIME_EMPTY_MS 14.0
+#define MIN_STEP_TIME_EMPTY_MS 4.5
+#define MAX_STEP_TIME_FULL_MS 14.0
+#define MIN_STEP_TIME_FULL_MS 5.0
+#define STEP_TIME_DIRECTION_CHANGE_MS 40.0
 
-#define STEP_ACCEL_LINEAR_EMPTY 0.935 //.92
-#define STEP_DECEL_LINEAR_EMPTY 1.10 //1.10
-#define STEP_ACCEL_LINEAR_FULL 0.955 //.945 //new .955
-#define STEP_DECEL_LINEAR_FULL 1.075 //1.075 //new 1.08
-#define STEP_SWITCH_DELAY 40.0
+#define STEP_ACCEL_LINEAR_EMPTY 0.935
+#define STEP_DECEL_LINEAR_EMPTY 1.10
+#define STEP_ACCEL_LINEAR_FULL 0.955
+#define STEP_DECEL_LINEAR_FULL 1.075
 #define STEP_PUMP_ACCEL_RATIO .25
 #define STEP_PUMP_DECEL_RATIO .75
 
@@ -42,47 +42,45 @@ uint8_t step_fall_range_cont = STEP_FALL_RANGE_CONT_EMPTY;
 #define MIN_SPEED_FOR_CONT_RANGE 7.0
 
 #define DEQUEUE_HOLD_TIME_STOPPED 320 //ms
-uint16_t dequeue_hold_time_reverse = 500; //ms //360
+uint16_t dequeueHoldTimeReverse_ms = 500; //ms //360
 
 
-#define BELT_PWM_CRAWL 65
-#define BELT_PWM_MAX 166
-#define DIST_TOTAL_BELT 750000
-#define DIST_OP1_OP2 67000
-#define DIST_OP1_OP3 237500
-#define DIST_ACCEL_CALIB_SUBTRACT 5000
-#define DIST_OP1_IND 30186
-#define DIST_OP3_BRAKE 3000 //not used
-#define DIST_OP3_FALL 29500
+#define BELT_CRAWL_PWM 65
+#define BELT_MAX_PWM 166
 
-#define ADC_count 3 //how many values are stored for each ADC
-#define INTERRUPT_DEBOUNCE_LENGTH 100
+#define DIST_OP1_OP2_UM 67000
+#define DIST_OP1_OP3_UM 237500
+#define DIST_ACCEL_CALIB_SUBTRACT_UM 5000
+#define DIST_OP1_IND_UM 30186
+#define DIST_OP3_FALL_UM 29500
+#define DIST_RAMPDOWN_UM 750000
+
+#define INTERRUPT_DEBOUNCE_TIME_MS 100
 
 
 // define the global variables that can be used in every function ==========
-uint16_t ADC_result = 0;
-uint8_t ACD_result_flag;
+uint16_t adcResult = 0;
+uint8_t adcResultFlag = 0;
 
-uint32_t timer2_pear = 0;
-uint8_t timer2_fract = 0;
-uint32_t timer2_overflow_count = 0;
-uint32_t interrupt_debounce_timer =0;
-uint32_t dequeue_time = 0;
+uint32_t timer2Pear = 0;
+uint8_t timer2Fract = 0;
+uint32_t timer2OverflowCount = 0;
+uint32_t interruptDebounceTimer = 0;
+uint32_t dequeueTime = 0;
 
-uint32_t belt_pos = 0;
-int16_t belt_accel_counter =0; //now signed, positive for accel, negative for decel
-int16_t belt_speed = 0;
-int16_t belt_speed_start =0; //speed at start of accel or decel
+uint32_t beltPos = 0;
+int16_t beltAccelCounter = 0; //now signed, positive for accel, negative for decel
+int16_t beltSpeed = 0;
+int16_t beltSpeedStart = 0; //speed at start of accel or decel
 
-uint16_t belt_speed_max = 351;
-float belt_accel = 2.807;
-float belt_decel =-3.426;
+uint16_t beltSpeedMax = 351;
+float beltAccel = 2.807;
+float beltDecel = -3.426;
 
-uint16_t brake_dist = 15000;
-uint32_t ramp_down_pos =0;
-uint8_t pause_program_flag=0;
-uint8_t unidentified_part_flag =0;
-uint8_t amount_sorted =0;
+uint32_t rampDownPos = 0;
+uint8_t pause_program_flag = 0;
+uint8_t unidentified_part_flag = 0;
+uint8_t amount_sorted = 0;
 
 uint8_t stepper_pos = 0;
 uint8_t desired_pos = 0;
@@ -96,8 +94,8 @@ float prev_step_time = 0;
 float step_delay = 1;
 int8_t stepper_state =0;
 
-float max_step_time = MAX_STEP_TIME_EMPTY;
-float min_step_time = MIN_STEP_TIME_EMPTY;
+float max_step_time = MAX_STEP_TIME_EMPTY_MS;
+float min_step_time = MIN_STEP_TIME_EMPTY_MS;
 
 float step_accel_linear = STEP_ACCEL_LINEAR_EMPTY;
 float step_decel_linear = STEP_DECEL_LINEAR_EMPTY;
@@ -113,7 +111,6 @@ int16_t op_counter2= 0x00;
 int16_t op_counter3= 0x00;
 int16_t ind_counter= 0x00;
 
-uint16_t ADC_refl_values[ADC_count]; //Array of size ADC_count
 uint16_t ADC_refl_val =1023;
 
 uint16_t refl_theoretical[4] = {960, 150, 959, 576}; //Black, Aluminum, White, Steel //station 4 vals
@@ -126,7 +123,8 @@ uint16_t refl_theoretical[4] = {960, 150, 959, 576}; //Black, Aluminum, White, S
 
 uint8_t interrupt_flag = 0;
 
-typedef struct part{
+typedef struct part
+{
 	int8_t ind;
 	uint8_t material;
 	uint8_t drop_state;
@@ -141,7 +139,8 @@ typedef struct part{
 	struct part *prev;
 } part;
 
-typedef struct dropped_part{
+typedef struct dropped_part
+{
 	uint8_t material;
 	uint8_t drop_state;
 	struct dropped_part *next;
@@ -164,7 +163,8 @@ void pauseProgram();
 //===========================================END OF VARIABLES=====================================================
 
 
-void setup() {
+void setup(void)
+{
 	// changing clock speed===============================================
 	CLKPR = 0b10000000;
 	CLKPR = 0b00000000;
@@ -217,20 +217,22 @@ void setup() {
 
 
 
-unsigned long pear(){
+unsigned long pear(void)
+{
 	unsigned long m;
 	uint8_t oldSREG = SREG;
 
-	// disable interrupts while we read timer2_pear or we might get inconsistent vals
+	// disable interrupts while we read timer2Pear or we might get inconsistent vals
 	cli();
-	m = timer2_pear;
+	m = timer2Pear;
 	SREG = oldSREG;
 
 	return m;
 }
 
 
-void pearDelay(uint16_t length){
+void pearDelay(uint16_t length)
+{
 	length=length*CLOCK_MULT;
 	uint32_t pear_delay_start = pear();
 	while(1){
@@ -239,7 +241,8 @@ void pearDelay(uint16_t length){
 }
 
 
-void pwm(uint8_t duty_cycle) { //Runs pwm on pin 7 port B.
+void pwm(uint8_t duty_cycle)  //Runs pwm on pin 7 port B.
+{
 	TCCR0A |= _BV(WGM00);
 	TCCR0A |= _BV(WGM01);
 	TCCR0A |= _BV(COM0A1);
@@ -248,14 +251,16 @@ void pwm(uint8_t duty_cycle) { //Runs pwm on pin 7 port B.
 	OCR0A = duty_cycle;
 }
 
-void calculateTimeToDecel(){
+void calculateTimeToDecel(void)
+{
 	uint8_t steps = (floor)(log(max_step_time/min_step_time)/log(step_decel_linear)+1);
-	dequeue_hold_time_reverse = CLOCK_MULT*(min_step_time*(step_fall_range_stop-steps)+(min_step_time*(1-pow(step_decel_linear,steps+1))/(1-step_decel_linear))+32);		
+	dequeueHoldTimeReverse_ms = CLOCK_MULT*(min_step_time*(step_fall_range_stop-steps)+(min_step_time*(1-pow(step_decel_linear,steps+1))/(1-step_decel_linear))+32);		
 }
 
 
 
-void flashLeds() {
+void flashLeds(void) 
+{
 	uint32_t counter = pear();
 	uint8_t i = 1;
 	while(i < 4) {
@@ -273,38 +278,34 @@ void flashLeds() {
 }
 
 
-void resetADCreflVals(){
-	//for(int i=0; i<ADC_count; i++) ADC_refl_values[i] = 1023;
+void resetADCreflVals(void)
+{
 	ADC_refl_val=1023;
 }
 
 
-uint16_t averageADCreflVals(){
-	uint16_t ADC_sum = 0;
-	for(int i=0; i<ADC_count; i++) ADC_sum += ADC_refl_values[i]; //sum stored reflectance values
-	return ADC_sum/ADC_count; //assign reflectance value to part
-}
-
-
-void calibBreak(){
+void calibBreak(void)
+{
 	PORTB = BRAKE;
-	uint32_t start_brake_time=pear();
+	uint32_t start_BRAKE_TIME_MS=pear();
 	while(1){
-		if(pear()-start_brake_time>BRAKE_TIME*CLOCK_MULT) break;
+		if(pear()-start_BRAKE_TIME_MS>BRAKE_TIME_MS*CLOCK_MULT) break;
 	}
 }
 
 
-void calibReverse(int t){
+void calibReverse(int t)
+{
 	PORTB=REVERSE;
-	pwm(BELT_PWM_MAX);
+	pwm(BELT_MAX_PWM);
 	uint32_t start_rev_time=pear();
 	while(1){
 		if(pear()-start_rev_time>t*CLOCK_MULT) break;
 	}
 }
 
-void calibrateMaterials(){
+void calibrateMaterials(void)
+{
 	calibBreak();
 	flashLeds();
 	flashLeds();
@@ -315,7 +316,7 @@ void calibrateMaterials(){
 		uint16_t ADC_avg = 0;
 		uint8_t j=0;
 		while((interrupt_flag & 0b00000100) != 0b00000100) {
-			pwm(BELT_PWM_MAX);
+			pwm(BELT_MAX_PWM);
 			PORTB=FORWARD;
 			uint32_t start_time=0;
 			while(1){ //check op2 sensor to know when to start reflective sensing
@@ -331,25 +332,18 @@ void calibrateMaterials(){
 			}
 			ADCSRA |= _BV(ADSC); //call ADC conversion once at start of loop
 			while(1){
-				if (ACD_result_flag){ //if conversion is done
-					ACD_result_flag = 0x00; //reset flag
+				if (adcResultFlag) //if conversion is done
+				{ 
+					adcResultFlag = 0x00; //reset flag
 
-					if(ADC_result<ADC_refl_val) ADC_refl_val = ADC_result;
-
-					/*
-					uint16_t temp_refl = 0;
-					for(int k=0; k<ADC_count; k++){ //Keep lowest three values per part
-						if(ADC_result<ADC_refl_values[k]){ //will re sort list and keep lowest three ADC values
-							temp_refl = ADC_refl_values[k];
-							ADC_refl_values[k] = ADC_result;
-							ADC_result = temp_refl;
-						}
-					}*/
+					if(adcResult<ADC_refl_val)
+					{
+						 ADC_refl_val = adcResult;
+					}
 					ADCSRA |= _BV(ADSC); //call ADC conversion again
 				}
 				if(pear()-start_time>100*CLOCK_MULT) break; //stop reflective sensing after set amount of time
 			}
-			//ADC_avg = (ADC_avg*j+averageADCreflVals())/(j+1); //update average each pass
 			ADC_avg = (ADC_avg*j+ADC_refl_val)/(j+1);
 			resetADCreflVals();
 			PORTC = ADC_avg;
@@ -369,8 +363,9 @@ void calibrateMaterials(){
 }
 
 
-uint8_t fallStopped(uint8_t switcher, uint16_t fall_reverse_time, uint16_t *fbp){
-	if(PORTB== BRAKE && belt_speed == 0 && head!= NULL){
+uint8_t fallStopped(uint8_t switcher, uint16_t fall_reverse_time, uint16_t *fbp)
+{
+	if(PORTB== BRAKE && beltSpeed == 0 && head!= NULL){
 		calibBreak();
 		uint8_t op3_pull = (~PIND)&0b01000000;
 		head->pos3=0;
@@ -386,13 +381,13 @@ uint8_t fallStopped(uint8_t switcher, uint16_t fall_reverse_time, uint16_t *fbp)
 		if(switcher==0){
 			if(head->pos3 ==0 && op3_pull==0x00) return 1;
 			else{
-				*fbp += belt_speed_max;
+				*fbp += beltSpeedMax;
 				head->pos3=0;
 				return 0;
 			}
 		}
 		else{
-			if(head->pos3 ==0 && op3_pull==0x00) *fbp-=belt_speed_max;
+			if(head->pos3 ==0 && op3_pull==0x00) *fbp-=beltSpeedMax;
 			return 0;
 		}
 	}
@@ -401,14 +396,16 @@ uint8_t fallStopped(uint8_t switcher, uint16_t fall_reverse_time, uint16_t *fbp)
 
 
 
-void fallBrakeCheck(uint16_t fall_brake_pos){
-	if(head->pos3!=0 && belt_pos-head->pos3 > fall_brake_pos){
+void fallBrakeCheck(uint16_t fall_brake_pos)
+{
+	if(head->pos3!=0 && beltPos-head->pos3 > fall_brake_pos){
 		PORTB=BRAKE;
 	}
 }
 
 
-void calibrationFall(){
+void calibrationFall(void)
+{
 	calibBreak();
 	flashLeds();
 	PORTB=FORWARD;
@@ -425,7 +422,7 @@ void calibrationFall(){
 		}
 	}
 	flashLeds();
-	fall_brake_pos-=belt_speed_max;
+	fall_brake_pos-=beltSpeedMax;
 	while((interrupt_flag & 0b00001000) != 0b00001000) {
 		if(pear()>prev_pear_fall+CLOCK_MULT-1) {
 			prev_pear_fall=pear();
@@ -439,7 +436,7 @@ void calibrationFall(){
 	PORTA=fall_brake_pos>>8;
 	PORTC=fall_brake_pos;
 	pearDelay(15000);
-	uint16_t d=-(belt_speed_max*belt_speed_max)/(2*belt_decel) + fall_brake_pos;
+	uint16_t d=-(beltSpeedMax*beltSpeedMax)/(2*beltDecel) + fall_brake_pos;
 	PORTA = d>>8;
 	PORTC = d;
 	pearDelay(15000);
@@ -447,10 +444,11 @@ void calibrationFall(){
 }
 
 
-void calibrationInd(){
+void calibrationInd(void)
+{
 	calibBreak();			//stop the belt
 	flashLeds();
-	pwm(BELT_PWM_MAX);
+	pwm(BELT_MAX_PWM);
 	uint16_t time_avg=0;
 	uint8_t i=0;
 	while((interrupt_flag & 0b00001000) != 0b00001000) {
@@ -496,7 +494,7 @@ void calibrationInd(){
 		i++;
 	}
 	interrupt_flag &= 0b11110111; //reset flag
-	uint16_t temp_ind_dist = belt_speed_max*time_avg; //(10um/ms)
+	uint16_t temp_ind_dist = beltSpeedMax*time_avg; //(10um/ms)
 	PORTA=temp_ind_dist>>8;
 	PORTC=temp_ind_dist;
 	pearDelay(15000);
@@ -504,10 +502,11 @@ void calibrationInd(){
 }
 
 
-void calibrationDecel(){
+void calibrationDecel(void)
+{
 	calibBreak();			//stop the belt
 	flashLeds();
-	pwm(BELT_PWM_MAX);
+	pwm(BELT_MAX_PWM);
 	uint16_t time_avg=0;
 	uint8_t i=0;
 	while((interrupt_flag & 0b00001000) != 0b00001000) { //loop until button is pressed again
@@ -552,31 +551,32 @@ void calibrationDecel(){
 		PORTA=time_avg>>8;
 		PORTC=time_avg;
 		calibBreak();
-		calibReverse(time_avg-BRAKE_TIME+400);
+		calibReverse(time_avg-BRAKE_TIME_MS+400);
 		calibBreak();
 		i++;
 	}
 	interrupt_flag &= 0b11110111; //reset flag
-	float time_accel = (belt_speed_max/belt_accel);					// time required to accelerate from stop
-	uint16_t time_full= time_avg-BRAKE_TIME-time_accel;						// time at full speed between sensors
-	belt_decel = -((float)belt_speed_max*belt_speed_max)/(2.0*((float)DIST_OP1_OP3-(float)time_full*belt_speed_max-0.5*belt_accel*time_accel*time_accel)); // (10um)/ms^2
-	belt_decel = -belt_decel*1000;
-	PORTC=(int)belt_decel;
-	PORTA=(int)belt_decel>>8;
-	belt_decel=-belt_decel/1000;
+	float time_accel = (beltSpeedMax/beltAccel);					// time required to accelerate from stop
+	uint16_t time_full= time_avg-BRAKE_TIME_MS-time_accel;						// time at full speed between sensors
+	beltDecel = -((float)beltSpeedMax*beltSpeedMax)/(2.0*((float)DIST_OP1_OP3_UM-(float)time_full*beltSpeedMax-0.5*beltAccel*time_accel*time_accel)); // (10um)/ms^2
+	beltDecel = -beltDecel*1000;
+	PORTC=(int)beltDecel;
+	PORTA=(int)beltDecel>>8;
+	beltDecel=-beltDecel/1000;
 	pearDelay(15000);
 	calibrationInd();
 }
 
 
 
-void calibrationAccel(){
+void calibrationAccel(void)
+{
 	calibBreak();					//stop the belt
 	flashLeds();
 	uint16_t time_avg=0;
 	uint8_t i=0;
 	while((interrupt_flag & 0b00001000) != 0b00001000) {
-		pwm(BELT_PWM_CRAWL);
+		pwm(BELT_CRAWL_PWM);
 		PORTB=FORWARD;
 		uint32_t start_time =0;
 		uint32_t end_time=0;
@@ -585,7 +585,7 @@ void calibrationAccel(){
 				calibBreak();
 				start_time = pear();
 				PORTB= FORWARD;
-				pwm(BELT_PWM_MAX);
+				pwm(BELT_MAX_PWM);
 				break;
 			}
 		}
@@ -611,20 +611,21 @@ void calibrationAccel(){
 		i++;
 	}
 	interrupt_flag &= 0b11110111; //reset flag
-	belt_accel = (float)-1.0/((2.0*(DIST_OP1_OP3-DIST_ACCEL_CALIB_SUBTRACT)/((float)belt_speed_max*belt_speed_max))-(2.0*time_avg/belt_speed_max)); // um/ms^2
-	belt_accel = belt_accel*1000;
-	PORTC=(int)belt_accel;
-	PORTA=(int)belt_accel>>8;
-	belt_accel = belt_accel/1000;
+	beltAccel = (float)-1.0/((2.0*(DIST_OP1_OP3_UM-DIST_ACCEL_CALIB_SUBTRACT_UM)/((float)beltSpeedMax*beltSpeedMax))-(2.0*time_avg/beltSpeedMax)); // um/ms^2
+	beltAccel = beltAccel*1000;
+	PORTC=(int)beltAccel;
+	PORTA=(int)beltAccel>>8;
+	beltAccel = beltAccel/1000;
 	pearDelay(15000);
 	calibrationDecel();
 }
 
 
-void calibrationVMax(){
+void calibrationVMax(void)
+{
 	calibBreak();			//stop the belt
 	flashLeds();
-	pwm(BELT_PWM_MAX);
+	pwm(BELT_MAX_PWM);
 	uint16_t time_avg=0;
 	uint8_t i=0;
 	while((interrupt_flag & 0b00001000) != 0b00001000) {
@@ -667,9 +668,9 @@ void calibrationVMax(){
 		i++;
 	}
 	interrupt_flag &= 0b11110111; //reset flag
-	belt_speed_max=DIST_OP1_OP3/time_avg; //(10um/ms)
-	PORTA=belt_speed_max>>8;
-	PORTC=belt_speed_max;
+	beltSpeedMax=DIST_OP1_OP3_UM/time_avg; //(10um/ms)
+	PORTA=beltSpeedMax>>8;
+	PORTC=beltSpeedMax;
 	pearDelay(15000);
 	calibrationAccel();
 }
@@ -677,7 +678,8 @@ void calibrationVMax(){
 
 
 
-void enqueue(part **h, part **t) {
+void enqueue(part **h, part **t) 
+{
 	part *new_part = malloc(sizeof(part));
 	new_part->next = NULL;
 	new_part->prev = NULL;
@@ -704,13 +706,18 @@ void enqueue(part **h, part **t) {
 }
 
 
-void checkTooCloseContinuous(){
+void checkTooCloseContinuous(void)
+{
 	desired_pos = (head->material-1)*50;
-	if(head->drop_state==1 && abs(remainingSteps())<TOO_CLOSE_CONT_RANGE) head->drop_state=4;
+	if(head->drop_state==1 && abs(remainingSteps())<TOO_CLOSE_CONT_RANGE)
+	{
+		head->drop_state=4;
+	}
 }
 
 
-void enqueueDropped(dropped_part **dh, dropped_part **dt) {
+void enqueueDropped(dropped_part **dh, dropped_part **dt) 
+{
 	dropped_part *new_part = malloc(sizeof(dropped_part));
 	new_part->next = NULL;
 	new_part->prev = NULL;
@@ -730,11 +737,15 @@ void enqueueDropped(dropped_part **dh, dropped_part **dt) {
 }
 
 
-void dequeue(part **h, part **t){
+void dequeue(part **h, part **t)
+{
 	part *dq_part = *h;
 	if (*h != NULL){
 		checkTooCloseContinuous(); //will set drop state to 4 if too close
-		if(stepper_dir==0) head->drop_state = 5;
+		if(stepper_dir==0) 
+		{
+			head->drop_state = 5;
+		}
 		enqueueDropped(&dhead, &dtail); //needs to be called after check too close cont to assign correct drop state
 		*h = (*h)->next;
 		if(*h==NULL) (*t)=NULL; //also set tail to null if list is empty
@@ -742,11 +753,12 @@ void dequeue(part **h, part **t){
 	}
 	free(dq_part); //free memory
 	list_size--;
-	dequeue_time = pear();
+	dequeueTime = pear();
 	return;
 }
 
-void dequeueMissing(part **h, part **t){
+void dequeueMissing(part **h, part **t)
+{
 	part *dq_part = *h;
 	if (*h != NULL){
 		*h = (*h)->next;
@@ -760,54 +772,20 @@ void dequeueMissing(part **h, part **t){
 
 
 
-void assignInductance(){
-	/*PORTC+=1;
+void assignInductance(void)
+{
 	part* iterator = tail;
-	uint8_t closest_part = 0;
-	int32_t shortest_dist =64000; //largest possible unsigned 16 bit
-	int i = 1;
-	PORTA=0x00;
-	while(iterator!=NULL && iterator->pos1!= 0 && i<3){
-		PORTA|=0b10000000;
-		int32_t temp_belt_pos = belt_pos/2;
-		int32_t temp_pos1 = iterator->pos1/2;
-		int32_t temp_op1_ind = DIST_OP1_IND/2;
-		if(abs(temp_belt_pos - temp_pos1 - temp_op1_ind) < shortest_dist){
-			PORTA|=0b01000000;
-			shortest_dist = abs(temp_belt_pos - temp_pos1 - temp_op1_ind);
-			closest_part=i;
-		}
-		iterator= iterator->prev;
-		i++;
-	}
-	part* iterator2=tail;
-	PORTA|=closest_part;
-	for(uint8_t m=1; m<closest_part; m++) iterator2=iterator2->prev; //assign iterator to the correct node.
-	if(iterator2!=NULL && closest_part!=0) iterator2->ind =1;*/
-	part* iterator = tail;
-	if(tail!= NULL && belt_pos-iterator->pos1 > DIST_OP1_IND -6000) iterator->ind=1;
+	if(tail!= NULL && beltPos-iterator->pos1 > DIST_OP1_IND_UM -6000) iterator->ind=1;
 	else if(tail->next!=NULL) iterator->next->ind=1;
 
 }
 
 
-void checkInd() {
-	//iterate through last 2 blocks. if ind value has not been set and position is between values appropriate for hall, set.
-	/*part* iterator = tail;
-	for(int i = 0; i<2; i++) {
-		if((iterator->ind == 0) && (belt_pos - (iterator->pos1) > DIST_OP1_IND - IND_RANGE) && (belt_pos - (iterator->pos1) < DIST_OP1_IND + IND_RANGE)) {
-			if(((~PIND)&0b00010000) == 0b00010000){
-				iterator->ind = 1;
-			}
-			else{
-				iterator->ind = -1;
-			}
-		}
-		iterator = iterator->prev;
-	}*/
+void checkInd(void) 
+{
 	part* iterator=tail;
 	while(iterator!= NULL && iterator->ind==0){
-		if(belt_pos-iterator->pos1>DIST_OP1_IND-200){
+		if(beltPos-iterator->pos1>DIST_OP1_IND_UM-200){
 			if(((~PIND)&0b00010000) == 0b00010000) iterator->ind=1;
 			else iterator->ind=-1;
 		}
@@ -816,61 +794,64 @@ void checkInd() {
 }
 
 
-void identifyAndPlan() {
+void assignMaterial(void) 
+{
 	part* iterator = head;
-	while(iterator!=NULL && iterator->material!=0) iterator=iterator->next;
+	while(iterator!=NULL && iterator->material!=0) 
+	{
+		iterator=iterator->next;
+	}
 
-	if(iterator!=NULL){
+	if(iterator!=NULL)
+	{
 		iterator->refl = ADC_refl_val;
 		resetADCreflVals();
-/*
-		//OLD CODE
-		if(iterator->refl>=refl_theoretical[0]) iterator->material=1;
-		else if(iterator->refl>STEEL_REFL_MAX) iterator->material=3;
-		else if(iterator->refl>STEEL_REFL_MIN) iterator->material=4;
-		else iterator->material=2;*/
 
-		if(iterator->refl>=BLACK_REFL_MIN && iterator->ind!=1) iterator->material=1;
-		else if(iterator->refl>WHITE_REFL_MIN && iterator->ind!=1) iterator->material=3;
-		else if(iterator->refl>STEEL_REFL_MIN && iterator->refl<STEEL_REFL_MAX && iterator->ind==1) iterator->material=4;
-		else if(iterator->refl<AL_REFL_MAX && iterator->refl>AL_REFL_MIN)iterator->material=2;
-		else{
-			iterator->material=1; //assign a random material so it does not =0
+		if(iterator->refl>=BLACK_REFL_MIN && iterator->ind!=1) 
+		{
+			iterator->material=1;
+		}
+		else if(iterator->refl>WHITE_REFL_MIN && iterator->ind!=1)
+		{
+			 iterator->material=3;
+		}
+		else if(iterator->refl>STEEL_REFL_MIN && iterator->refl<STEEL_REFL_MAX && iterator->ind==1)
+		{
+			 iterator->material=4;
+		}
+		else if(iterator->refl<AL_REFL_MAX && iterator->refl>AL_REFL_MIN)
+		{
+			iterator->material=2;
+		}
+		else
+		{
+			iterator->material=1; //assign a random material so it does not = 0
 			unidentified_part_flag=1;
 			pauseProgram();
-			PORTC=iterator->refl;
-			PORTA=iterator->refl>>8;
 		}
 	}
-
-	//if((iterator->material==1 || iterator->material==3) && iterator->ind==1) iterator->material=4; //Set to steel if inductance is high even if reflectance thinks part is plastic
-	/*if(iterator!=NULL){
-		PORTA=iterator->refl>>8;
-		PORTC=iterator->refl;
-
-	}
-	else PORTA=0xff;*/
-
 }
 
 
-void assignRefl(){  //Called after ADC conversion has been completed
+void assignRefl(void)
+{  //Called after ADC conversion has been completed
 	part* iterator = head;
 	while(iterator!=NULL && iterator->material!=0) iterator=iterator->next;
 
 	if(iterator!=NULL){
-		if(ADC_result<ADC_refl_val) ADC_refl_val=ADC_result;
+		if(adcResult<ADC_refl_val) ADC_refl_val=adcResult;
 	}
 }
 
 
-int stepperHome() {
+int stepperHome(void) 
+{
 	uint16_t stepper_setup_counter = 0;
 	while(stepper_setup_counter<10){
 		stepper_command++;
 		if(stepper_command > 3) stepper_command = 0;
 		PORTE=Steps[stepper_command];
-		pearDelay(STEP_HOME_TIME);
+		pearDelay(STEP_HOME_TIME_MS);
 		stepper_setup_counter++;
 	}
 	stepper_setup_counter=0;
@@ -878,7 +859,7 @@ int stepperHome() {
 		stepper_command++;
 		if(stepper_command > 3) stepper_command = 0;
 		PORTE=Steps[stepper_command];
-		pearDelay(STEP_HOME_TIME);
+		pearDelay(STEP_HOME_TIME_MS);
 		if(((~PIND)&0b10000000)==0b10000000) stepper_setup_counter++;
 	}
 	pearDelay(200);
@@ -886,16 +867,17 @@ int stepperHome() {
 		stepper_command--;
 		if(stepper_command < 0) stepper_command = 3;
 		PORTE=Steps[stepper_command];
-		pearDelay(STEP_HOME_TIME);
+		pearDelay(STEP_HOME_TIME_MS);
 	}
 	stepper_pos=0;
 	return 0;
 }
 
-void decreaseStepperSpeed(){
+void decreaseStepperSpeed(void)
+{
 
-	max_step_time+=(MAX_STEP_TIME_FULL-MAX_STEP_TIME_EMPTY)/PARTS_TO_SORT;
-	min_step_time+=(MIN_STEP_TIME_FULL-MIN_STEP_TIME_EMPTY)/PARTS_TO_SORT;
+	max_step_time+=(MAX_STEP_TIME_FULL_MS-MAX_STEP_TIME_EMPTY_MS)/PARTS_TO_SORT;
+	min_step_time+=(MIN_STEP_TIME_FULL_MS-MIN_STEP_TIME_EMPTY_MS)/PARTS_TO_SORT;
 	step_accel_linear += (STEP_ACCEL_LINEAR_FULL-STEP_ACCEL_LINEAR_EMPTY)/PARTS_TO_SORT;
 	step_decel_linear -= (STEP_DECEL_LINEAR_EMPTY-STEP_DECEL_LINEAR_FULL)/PARTS_TO_SORT;
 	step_fall_range_cont -= (STEP_FALL_RANGE_CONT_EMPTY-STEP_FALL_RANGE_CONT_FULL)/PARTS_TO_SORT;
@@ -905,7 +887,8 @@ void decreaseStepperSpeed(){
 }
 
 
-uint8_t chooseFallRange(){ //only enters if head has a pos 3, determine if part is continuous or reversal/stop
+uint8_t chooseFallRange(void) //only enters if head has a pos 3, determine if part is continuous or reversal/stop
+{ 
 
 	if(head!=NULL && head->next!=NULL && head->next->material==head->material) return 0; //stopping
 	else if(head!=NULL && head->next!=NULL && head->next->material != 0 && (desired_dir==stepper_dir || desired_dir==0)){ //dont use longer range when slowing to reverse
@@ -930,7 +913,8 @@ uint8_t chooseFallRange(){ //only enters if head has a pos 3, determine if part 
 
 
 
-uint8_t stepperDepositCheck(uint8_t material){ //can only enter if head!=NULL
+uint8_t stepperDepositCheck(uint8_t material)
+{ //can only enter if head!=NULL
 	uint8_t drop_range =0;
 	/*
 	if(chooseFallRange()==1){
@@ -969,13 +953,14 @@ uint8_t stepperDepositCheck(uint8_t material){ //can only enter if head!=NULL
 
 
 
-void stepperCheck(){ //check to see if the stepper is in acceptable range to drop part.
-	if(head != NULL && head->pos3 != 0 && belt_pos - head->pos3 > DIST_OP3_FALL) {
+void stepperCheck(void) //check to see if the stepper is in acceptable range to drop part.
+{ 
+	if(head != NULL && head->pos3 != 0 && beltPos - head->pos3 > DIST_OP3_FALL_UM) {
 		dequeue(&head, &tail);
 		decreaseStepperSpeed(); //Update stepper min and max step times on each dequeue
 	}
 	if(head != NULL && head->pos3 != 0) {
-		if(belt_pos - head->pos3 > 10500) {
+		if(beltPos - head->pos3 > 10500) {
 			if(head->material==0){
 				 head->material=1; //last minute setting to black if unassigned
 				 PORTA=0xff;
@@ -990,7 +975,8 @@ void stepperCheck(){ //check to see if the stepper is in acceptable range to dro
 
 
 
-int16_t remainingSteps(){ //called from stepperRun
+int16_t remainingSteps(void) //called from stepperRun
+{ 
 	int16_t result = desired_pos - stepper_pos;
 	if(stepper_dir==1){
 		if(dtail!= NULL && head!=NULL && (desired_pos-prev_pos==150 || desired_pos-prev_pos==-50)){
@@ -1014,30 +1000,25 @@ int16_t remainingSteps(){ //called from stepperRun
 
 
 
-void stepperRun(){ //controls actions of the stepper
-	//PORTA=dequeue_hold_time_reverse>>8;
-	//PORTC=dequeue_hold_time_reverse;
-	if(dtail!=NULL) prev_pos = ((dtail->material)-1)*50;
-	/*
-	if(amount_sorted>=1 && (step_delay>10.0 || step_delay<=1) && pear()-dequeue_time<DEQUEUE_HOLD_TIME_REVERSE) desired_pos = prev_pos; //reversing
-	else if(amount_sorted>=1 && too_close_cont_flag==1 && pear()-dequeue_time<DEQUEUE_HOLD_TIME_REVERSE) desired_pos = prev_pos;
-	else if(head!=NULL && head->material != 0) desired_pos = ((head->material)-1)*50;
-	else if(dtail!=NULL){
-		 desired_pos = prev_pos;
+void stepperRun(void) //controls actions of the stepper
+{   
+	if(dtail!=NULL) //if a part has been deposited
+	{
+		prev_pos = ((dtail->material)-1)*50; //set prevPos to the last dropped material
 	}
-	else desired_pos=stepper_pos;
-	*/
 
-	if(dtail!=NULL && dtail->drop_state ==0 && pear()-dequeue_time<dequeue_hold_time_reverse) desired_pos = prev_pos; //stopping
-	else if(dtail!=NULL && dtail->drop_state ==2 && pear()-dequeue_time<DEQUEUE_HOLD_TIME_STOPPED) desired_pos = prev_pos; //accelerating from stop
-	else if(dtail!=NULL && dtail->drop_state ==3 && pear()-dequeue_time<dequeue_hold_time_reverse) desired_pos = prev_pos; //reversing
-	else if(dtail!=NULL && dtail->drop_state ==4 && pear()-dequeue_time<DEQUEUE_HOLD_TIME_STOPPED) desired_pos = prev_pos;//continuous but too close
-	else if(dtail!=NULL && dtail->drop_state ==5 && pear()-dequeue_time<DEQUEUE_HOLD_TIME_STOPPED) desired_pos = prev_pos;
+	
+	if(dtail!=NULL && dtail->drop_state ==0 && pear()-dequeueTime<dequeueHoldTimeReverse_ms)
+	{
+		 desired_pos = prev_pos; //stopping
+	}
+	else if(dtail!=NULL && dtail->drop_state ==2 && pear()-dequeueTime<DEQUEUE_HOLD_TIME_STOPPED) desired_pos = prev_pos; //accelerating from stop
+	else if(dtail!=NULL && dtail->drop_state ==3 && pear()-dequeueTime<dequeueHoldTimeReverse_ms) desired_pos = prev_pos; //reversing
+	else if(dtail!=NULL && dtail->drop_state ==4 && pear()-dequeueTime<DEQUEUE_HOLD_TIME_STOPPED) desired_pos = prev_pos;//continuous but too close
+	else if(dtail!=NULL && dtail->drop_state ==5 && pear()-dequeueTime<DEQUEUE_HOLD_TIME_STOPPED) desired_pos = prev_pos;
 	else if(head!=NULL && head->material != 0) desired_pos = ((head->material)-1)*50; //Continuous
 	else if(dtail!=NULL) desired_pos = prev_pos; //no parts, stay on last dropped
 	else desired_pos=stepper_pos; //start of program
-
-	//if(pear()-dequeue_time>=DEQUEUE_HOLD_TIME_REVERSE) too_close_cont_flag=0;
 
 	int16_t steps_remaining = remainingSteps();
 	if((pear()-prev_step_time) >= (floor)(step_delay*CLOCK_MULT+0.5)) { //is it time to step?
@@ -1074,7 +1055,7 @@ void stepperRun(){ //controls actions of the stepper
 				if(desired_dir==-1 && step_delay>=max_step_time){
 					 stepper_dir=-1;
 					 stepper_switch_flag =1;
-					 step_delay=STEP_SWITCH_DELAY;
+					 step_delay=STEP_TIME_DIRECTION_CHANGE_MS;
 					 PORTE |= Steps[prev_command];
 				}
 			}
@@ -1100,7 +1081,7 @@ void stepperRun(){ //controls actions of the stepper
 				if(desired_dir==1 && step_delay>=max_step_time){
 					stepper_dir=1;
 					stepper_switch_flag =1;
-					step_delay=STEP_SWITCH_DELAY;
+					step_delay=STEP_TIME_DIRECTION_CHANGE_MS;
 					PORTE |= Steps[prev_command];
 
 				}
@@ -1111,7 +1092,8 @@ void stepperRun(){ //controls actions of the stepper
 
 
 
-void stepperPump(){
+void stepperPump(void)
+{
 	if(stepper_switch_flag != 1 && stepper_state == 1 && ((pear()-prev_step_time) >= (floor)(step_delay*STEP_PUMP_ACCEL_RATIO*CLOCK_MULT+0.5))) {
 		int8_t temp_command = stepper_command;
 		if(stepper_dir==1){
@@ -1143,9 +1125,10 @@ void stepperPump(){
 
 
 
-void checkOPsensor1() {
+void checkOPsensor1(void) 
+{
 	if(((~PINF)&0b00001000) == 0b00001000){
-		if(op_counter1==-1) op1_pos = belt_pos;
+		if(op_counter1==-1) op1_pos = beltPos;
 		else if(op_counter1==1){
 			enqueue(&head, &tail);
 			tail->pos1 = op1_pos;
@@ -1159,7 +1142,8 @@ void checkOPsensor1() {
 }
 
 
-void checkOPsensor2() {
+void checkOPsensor2(void) 
+{
 	if((PIND&0b00100000) == 0b00100000){
 		if(op_counter2>=1) ADCSRA |= _BV(ADSC);
 		else op_counter2++;
@@ -1168,16 +1152,17 @@ void checkOPsensor2() {
 		if(op_counter2>0) op_counter2=0;
 		else if(op_counter2==0){ //two low senses in a row
 			op_counter2=-1;
-			identifyAndPlan();
+			assignMaterial();
 		}
 		else op_counter2=-1; //makes it so many senses of high are required to start ADC readings
 	}
 }
 
-void checkOPsensor3() {
+void checkOPsensor3(void) 
+{
 	if(((~PIND)&0b01000000) == 0b01000000){
 		if(op_counter3==-1) {
-			op3_pos = belt_pos;
+			op3_pos = beltPos;
 		}
 		else if(op_counter3==1){
 			if(head!= NULL){
@@ -1200,7 +1185,8 @@ void checkOPsensor3() {
 }
 
 
-void checkOPsensors() {
+void checkOPsensors(void) 
+{
 	checkOPsensor1();
 	checkOPsensor2();
 	checkOPsensor3();
@@ -1208,68 +1194,69 @@ void checkOPsensors() {
 
 
 
-void beltUpdateAccel(){
-	if(belt_accel_counter<=0) {
-		belt_accel_counter = 0;
-		belt_speed_start = belt_speed;
+void beltUpdateAccel(void)
+{
+	if(beltAccelCounter<=0) {
+		beltAccelCounter = 0;
+		beltSpeedStart = beltSpeed;
 	}
-	belt_accel_counter++;
-	belt_speed += (int)belt_accel; 		//floor belt acceleration to lower int and add to speed
-	if(belt_accel*belt_accel_counter > (float)belt_speed-belt_speed_start+0.5){
-		belt_speed += 1;
+	beltAccelCounter++;
+	beltSpeed += (int)beltAccel; 		//floor belt acceleration to lower int and add to speed
+	if(beltAccel*beltAccelCounter > (float)beltSpeed-beltSpeedStart+0.5){
+		beltSpeed += 1;
 	}
-	if(belt_speed>=belt_speed_max){
-		belt_speed=belt_speed_max;
-		belt_accel_counter=0;
-	}
-}
-
-
-void beltUpdateDecel(){
-	if(belt_accel_counter>=0) {
-		belt_accel_counter = 0;
-		belt_speed_start = belt_speed;
-	}
-	belt_accel_counter--;
-	belt_speed += (int)belt_decel; 		//floor belt deceleration to higher negative int and add to speed
-	if(belt_decel*(-belt_accel_counter) < (float)belt_speed-belt_speed_start-0.5){
-		belt_speed -= 1;
-	}
-	if(belt_speed<=0){
-		belt_speed=0;
-		belt_accel_counter=0;
+	if(beltSpeed>=beltSpeedMax){
+		beltSpeed=beltSpeedMax;
+		beltAccelCounter=0;
 	}
 }
 
 
-void calculateBrakeDist(){
-	brake_dist = (int)-(belt_speed*belt_speed)/belt_decel;
+void beltUpdateDecel(void)
+{
+	if(beltAccelCounter>=0) {
+		beltAccelCounter = 0;
+		beltSpeedStart = beltSpeed;
+	}
+	beltAccelCounter--;
+	beltSpeed += (int)beltDecel; 		//floor belt deceleration to higher negative int and add to speed
+	if(beltDecel*(-beltAccelCounter) < (float)beltSpeed-beltSpeedStart-0.5){
+		beltSpeed -= 1;
+	}
+	if(beltSpeed<=0){
+		beltSpeed=0;
+		beltAccelCounter=0;
+	}
 }
 
-void beltUpdate() {
-	if(PORTB==FORWARD && belt_speed<belt_speed_max){ //is it accelerating?
+
+void beltUpdate(void) 
+{
+	if(PORTB==FORWARD && beltSpeed<beltSpeedMax){ //is it accelerating?
 		beltUpdateAccel();
 	}
-	else if(PORTB==BRAKE && belt_speed!=0){ //Is it slowing down?
+	else if(PORTB==BRAKE && beltSpeed!=0){ //Is it slowing down?
 		beltUpdateDecel();
 	}
-	calculateBrakeDist();
-	belt_pos += belt_speed;
+	beltPos += beltSpeed;
 	return;
 }
 
 
-void rampDown(){
-	ramp_down_pos = belt_pos;
+void rampDown(void)
+{
+	rampDownPos = beltPos;
 }
 
 
-void pauseProgram(){ //will enter from pause button or unidentified part
+void pauseProgram(void)
+{ //will enter from pause button or unidentified part
 	pause_program_flag=1;
 }
 
 
-void pauseForUnidentified(){
+void pauseForUnidentified(void)
+{
 	PORTB=BRAKE;
 	pause_program_flag=0;
 	unidentified_part_flag =0;
@@ -1287,7 +1274,8 @@ void pauseForUnidentified(){
 }
 
 
-uint8_t countSorted(uint8_t mat){
+uint8_t countSorted(uint8_t mat)
+{
 	uint8_t temp_counter=0;
 	dropped_part *iterator=dhead;
 	while(iterator!=NULL){
@@ -1298,12 +1286,13 @@ uint8_t countSorted(uint8_t mat){
 }
 
 
-void displaySorted(){
+void displaySorted(void)
+{
 	PORTB=BRAKE;
 	pause_program_flag=0;
-	while((interrupt_flag & 0b00000001) != 0b00000001 || ramp_down_pos!=0){ //if paused. run continually until 2nd button press
-		if(ramp_down_pos!=0) interrupt_flag|=0b00000001;
-		ramp_down_pos=0; //these two lines cause it to terminate after one loop on rampdown
+	while((interrupt_flag & 0b00000001) != 0b00000001 || rampDownPos!=0){ //if paused. run continually until 2nd button press
+		if(rampDownPos!=0) interrupt_flag|=0b00000001;
+		rampDownPos=0; //these two lines cause it to terminate after one loop on rampdown
 		for(uint8_t i=1; i<=4; i++){
 			PORTA=i;
 			PORTC=countSorted(i);
@@ -1318,13 +1307,15 @@ void displaySorted(){
 	PORTC=0x00;
 }
 
-void checkMissingPart(){
-	if(head!= NULL && head->pos1!=0 && (belt_pos-head->pos1)>(DIST_OP1_OP3+100000)) dequeueMissing(&head, &tail);	
+void checkMissingPart(void)
+{
+	if(head!= NULL && head->pos1!=0 && (beltPos-head->pos1)>(DIST_OP1_OP3_UM+100000)) dequeueMissing(&head, &tail);	
 }
 
 
 
-void checkInterrupt() {
+void checkInterrupt(void) 
+{
 	if(interrupt_flag >0) {
 		if((interrupt_flag & 0b00000001) == 0b00000001) {
 			interrupt_flag &= 0b11111110;
@@ -1348,10 +1339,11 @@ void checkInterrupt() {
 }
 
 
-void mainLoop() {
+void mainLoop(void) 
+{
 	uint32_t prev_pear = 0;
 	uint32_t prev_pear2 =0;
-	pwm(BELT_PWM_MAX);
+	pwm(BELT_MAX_PWM);
 	PORTB = FORWARD;
 
 	while(1) { //main while loop of the code
@@ -1362,11 +1354,11 @@ void mainLoop() {
 			checkInd();
 			checkInterrupt();
 			checkMissingPart();
-			if(belt_speed<=0 && stepper_dir == 0 && pause_program_flag==1){
+			if(beltSpeed<=0 && stepper_dir == 0 && pause_program_flag==1){
 				if(unidentified_part_flag == 0) displaySorted();
 				else pauseForUnidentified();
 			}
-			if(ramp_down_pos!= 0 && belt_pos-ramp_down_pos>DIST_TOTAL_BELT) break;
+			if(rampDownPos!= 0 && beltPos-rampDownPos>DIST_RAMPDOWN_UM) break;
 		}
 		if(pear()>prev_pear2){
 			prev_pear2=pear();
@@ -1376,8 +1368,8 @@ void mainLoop() {
 		stepperRun();
 		stepperPump();
 
-		if (ACD_result_flag){ //check ADC flag while waiting for next ms to pass
-			ACD_result_flag = 0x00; //reset flag
+		if (adcResultFlag){ //check ADC flag while waiting for next ms to pass
+			adcResultFlag = 0x00; //reset flag
 			assignRefl();
 		}
 
@@ -1387,7 +1379,8 @@ void mainLoop() {
 }
 
 
-void terminateFlash(){
+void terminateFlash(void)
+{
 	uint8_t d=50;
 	PORTA=0B10000000;
 	pearDelay(d);
@@ -1428,7 +1421,8 @@ void terminateFlash(){
 }
 
 
-int main(){
+int main(void)
+{
 	setup();
 	calculateTimeToDecel();
 	resetADCreflVals();
@@ -1439,54 +1433,55 @@ int main(){
 }
 
 ISR(INT0_vect) {
-	if(pear()-interrupt_debounce_timer>INTERRUPT_DEBOUNCE_LENGTH*CLOCK_MULT){
-		interrupt_debounce_timer = pear();
+	if(pear()-interruptDebounceTimer>INTERRUPT_DEBOUNCE_TIME_MS*CLOCK_MULT){
+		interruptDebounceTimer = pear();
 		interrupt_flag |= 0b00000001;
 	}
 }
 
 ISR(INT1_vect) {
-	if(pear()-interrupt_debounce_timer>INTERRUPT_DEBOUNCE_LENGTH*CLOCK_MULT){
-		interrupt_debounce_timer = pear();
+	if(pear()-interruptDebounceTimer>INTERRUPT_DEBOUNCE_TIME_MS*CLOCK_MULT){
+		interruptDebounceTimer = pear();
 		interrupt_flag |= 0b00000010;
 	}
 }
 
 ISR(INT2_vect) {
-	if(pear()-interrupt_debounce_timer>INTERRUPT_DEBOUNCE_LENGTH*CLOCK_MULT){
-		interrupt_debounce_timer = pear();
+	if(pear()-interruptDebounceTimer>INTERRUPT_DEBOUNCE_TIME_MS*CLOCK_MULT){
+		interruptDebounceTimer = pear();
 		interrupt_flag |= 0b00000100;
 	}
 }
 
 ISR(INT3_vect) {
-	if(pear()-interrupt_debounce_timer>INTERRUPT_DEBOUNCE_LENGTH*CLOCK_MULT){
-		interrupt_debounce_timer = pear();
+	if(pear()-interruptDebounceTimer>INTERRUPT_DEBOUNCE_TIME_MS*CLOCK_MULT){
+		interruptDebounceTimer = pear();
 		interrupt_flag |= 0b00001000;
 	}
 }
 
 // the interrupt will be trigured if the ADC is done ========================
 ISR(ADC_vect) {
-	ADC_result=ADCL;
-	ADC_result+=ADCH<<8;
-	ACD_result_flag = 1;
+	adcResult=ADCL;
+	adcResult+=ADCH<<8;
+	adcResultFlag = 1;
 }
 
 ISR(TIMER2_OVF_vect) {
-	unsigned long m = timer2_pear;
-	unsigned char f = timer2_fract;
+	unsigned long m = timer2Pear;
+	unsigned char f = timer2Fract;
 
 	m += 1;
 	f += 3;
-	if (f >= 125) {
+	if (f >= 125) 
+	{
 		f -= 125;
 		m += 1;
 	}
 
-	timer2_fract = f;
-	timer2_pear = m;
-	timer2_overflow_count++;
+	timer2Fract = f;
+	timer2Pear = m;
+	timer2OverflowCount++;
 
 	TCNT2 = 0x00;
 
